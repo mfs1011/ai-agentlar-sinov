@@ -22,7 +22,8 @@
 - `public/lib.js` DOM'siz bo'lishi kerak — u Node testlarida import qilinadi.
 - Sonlarni formatlashda `Intl.NumberFormat`/`toLocaleString` **ishlatilmaydi**: `uz-UZ` Chrome'da "1,000,000", Node'da "1 000 000" beradi. Guruhlar qo'lda, NBSP (U+00A0) bilan (`formatSom`, `public/lib.js`).
 - Server `PORT` muhit o'zgaruvchisidan, `HOST` standart `127.0.0.1` (Nginx orqasida).
+- Frontend `/kalkulyator/` prefiksi ostida ham, ildizda ham ishlaydi: `public/` dagi barcha yo'llar (src/href, import, `fetch`, CSS `url()`) **nisbiy** (`app.js`, `api/installments`), `/` bilan boshlanmaydi — `base-path.test.js` tekshiradi.
 
 ## Ish tartibi
 - Ish bosqichma-bosqich; har bosqich oxirida commit. **Push qilinmaydi.**
-- Deploy (systemd, Nginx) — keyinroq alohida bosqich; hozircha deploy fayllari yozilmaydi.
+- Deploy fayllari `deploy/` da (systemd unit, Nginx parchasi, `DEPLOY.md`); port 3100, kod `/opt/kalkulyator`. Ularda haqiqiy domen/IP yo'q — `<domen>` (`deploy.test.js`). Serverga ulanilmaydi.

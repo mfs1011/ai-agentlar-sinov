@@ -1,0 +1,74 @@
+# /etc/systemd/system/kalkulyator.service
+# Bo'lib to'lash kalkulyatori: faqat 127.0.0.1:3100 da tinglaydi, oldida Nginx.
+# Tekshirish: systemd-analyze verify kalkulyator.service
+#             systemd-analyze security kalkulyator.service
+
+[Unit]
+Description=Kalkulyator (bo'lib to'lash) HTTP serveri
+Documentation=file:///opt/kalkulyator/deploy/DEPLOY.md
+After=network.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=kalkulyator
+Group=kalkulyator
+WorkingDirectory=/opt/kalkulyator
+Environment=NODE_ENV=production
+Environment=PORT=3100
+Environment=HOST=127.0.0.1
+ExecStart=/usr/local/bin/node /opt/kalkulyator/src/server.js
+
+Restart=on-failure
+RestartSec=2s
+# Ilova SIGTERM da ulanishlarni 10 s gacha kutadi (src/server.js), biz biroz ko'proq beramiz
+KillSignal=SIGTERM
+TimeoutStopSec=15s
+
+# --- Fayl tizimi -----------------------------------------------------------
+# Butun tizim (shu jumladan /opt/kalkulyator) faqat o'qish uchun; ilova hech narsa yozmaydi,
+# loglar stdout/stderr orqali journald ga ketadi.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+UMask=0077
+
+# --- Imtiyozlar ------------------------------------------------------------
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictSUIDSGID=yes
+RemoveIPC=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+# MemoryDenyWriteExecute=yes QO'YILMAYDI: V8 JIT yoziladigan+bajariladigan xotira talab qiladi,
+# Node bu bilan ishga tushmaydi.
+
+# --- Yadro va jarayonlar ----------------------------------------------------
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+# ProcSubset=pid QO'YILMAYDI: libuv xotira hajmini /proc/meminfo dan o'qiydi (V8 heap chegarasi).
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+# --- Tarmoq ----------------------------------------------------------------
+# Faqat localhost: Nginx bilan aloqa uchun yetarli, tashqariga chiqish yo'q.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+IPAddressDeny=any
+IPAddressAllow=localhost
+
+# --- Resurslar -------------------------------------------------------------
+MemoryMax=256M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target
