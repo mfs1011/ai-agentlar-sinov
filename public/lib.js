@@ -112,3 +112,68 @@ export function csvFileName(amount, months) {
   assertSafeInteger('csvFileName', 'months', months);
   return `tolovlar-${amount}-${months}.csv`;
 }
+
+export const CSV_ERROR = 'CSV faylni tayyorlab bo\'lmadi. Qaytadan hisoblab, yana urinib ko\'ring.';
+
+/**
+ * Oxirgi natijani CSV uchun saqlaydi va u formadagi qiymatlarga mosligini kuzatadi.
+ *
+ * Har bir yangi so'rov (begin) yoki maydon o'zgarishi (invalidate) avlodni
+ * oshiradi va saqlangan natijani o'chiradi. commit faqat hozirgi avlod tokeni
+ * bilan qabul qilinadi — forma o'zgargandan keyin kelgan eski javob CSV'ga
+ * tushmaydi.
+ */
+export function createResultState() {
+  let generation = 0;
+  let current = null;
+  return {
+    /** Yangi so'rov boshlanadi; qaytgan tokenni commit'ga bering. */
+    begin() {
+      generation += 1;
+      current = null;
+      return generation;
+    },
+    /** Forma o'zgardi — saqlangan natija endi mos emas. */
+    invalidate() {
+      generation += 1;
+      current = null;
+    },
+    /** Token hali joriymi (so'rovdan keyin forma o'zgarmaganmi)? */
+    isCurrent(token) {
+      return token === generation;
+    },
+    /**
+     * @param {number} token  begin() qaytargan qiymat
+     * @param {{amount: number, payments: {month: number, amount: number}[]}} result
+     * @returns {boolean} qabul qilindimi (token eskirgan bo'lsa — false)
+     */
+    commit(token, result) {
+      if (token !== generation) return false;
+      current = result;
+      return true;
+    },
+    get current() {
+      return current;
+    },
+  };
+}
+
+/**
+ * Natijadan CSV matni va fayl nomini tayyorlaydi. Xato otmaydi: noto'g'ri yoki
+ * yo'q natijada foydalanuvchiga ko'rsatiladigan xabarni qaytaradi.
+ *
+ * @param {{amount: number, payments: {month: number, amount: number}[]} | null} result
+ * @returns {{ok: true, csv: string, fileName: string} | {ok: false, message: string, cause: unknown}}
+ */
+export function prepareCsvDownload(result) {
+  try {
+    if (!result || !Array.isArray(result.payments)) {
+      throw new TypeError('prepareCsvDownload: natija yo\'q');
+    }
+    const csv = buildPaymentsCsv(result.payments);
+    const fileName = csvFileName(result.amount, result.payments.length);
+    return { ok: true, csv, fileName };
+  } catch (cause) {
+    return { ok: false, message: CSV_ERROR, cause };
+  }
+}
