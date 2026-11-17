@@ -3,6 +3,7 @@
 ## Buyruqlar
 - `npm test` — barcha testlar (`node --test`, `test/**/*.test.js`).
 - `PORT=3000 npm start` — serverni ishga tushirish (`HOST` ixtiyoriy, standart `127.0.0.1`). PORT yo'q/noto'g'ri bo'lsa exit 1. SIGTERM/SIGINT da toza to'xtaydi.
+
 ## Qat'iy cheklovlar
 - Node.js ≥ 26, ES modullar. **Tashqi bog'liqliklar yo'q** — faqat `node:` modullari; `npm install <paket>` qilinmaydi.
 - Testlar faqat `node:test` + `node:assert/strict`.
@@ -16,7 +17,9 @@
 ## API qoidalari
 - `POST /api/installments`, body `{"amount": number, "months": number}`. Satr (`"1000"`) → 400; tozalash faqat frontendda (bo'shliqli "1 000 000").
 - Xato formati: `{"error": {"code", "message", "details": [{"field", "message"}]}}`. Xabarlar **o'zbekcha (lotin)**.
-- Statik fayllarni Node beradi (`public/`), faqat oq ro'yxat orqali.
+- Statik fayllarni Node beradi (`public/`), faqat oq ro'yxat orqali (`STATIC_FILES`, `src/app.js`). `public/` ga yangi fayl qo'shilsa, oq ro'yxatga ham qo'shiladi — `static.test.js` buni tekshiradi.
+- HTML'ga qat'iy CSP (`default-src 'self'`): inline `<script>`, `<style>`, `style=""`, `on*=""` ishlatilmaydi.
+- `public/lib.js` DOM'siz bo'lishi kerak — u Node testlarida import qilinadi.
 - Server `PORT` muhit o'zgaruvchisidan, `HOST` standart `127.0.0.1` (Nginx orqasida).
 
 ## Ish tartibi

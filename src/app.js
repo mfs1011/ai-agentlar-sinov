@@ -10,9 +10,16 @@ export const MAX_BODY_BYTES = 1024;
  * Faqat shu yerda sanalgan fayllar beriladi; URL hech qachon fayl yo'liga
  * aylantirilmaydi, shuning uchun `..` orqali chiqib ketish imkonsiz.
  */
+const HTML = 'text/html; charset=utf-8';
+const JS = 'text/javascript; charset=utf-8';
+const CSS = 'text/css; charset=utf-8';
+
 const STATIC_FILES = new Map([
-  ['/', { file: 'index.html', type: 'text/html; charset=utf-8' }],
-  ['/index.html', { file: 'index.html', type: 'text/html; charset=utf-8' }],
+  ['/', { file: 'index.html', type: HTML }],
+  ['/index.html', { file: 'index.html', type: HTML }],
+  ['/app.js', { file: 'app.js', type: JS }],
+  ['/lib.js', { file: 'lib.js', type: JS }],
+  ['/style.css', { file: 'style.css', type: CSS }],
 ]);
 
 const HTML_CSP = [
@@ -151,7 +158,7 @@ async function handleStatic(req, res, entry, publicDir) {
   }
 
   const headers = { 'content-type': entry.type, 'cache-control': 'no-cache' };
-  if (entry.type.startsWith('text/html')) headers['content-security-policy'] = HTML_CSP;
+  if (entry.type === HTML) headers['content-security-policy'] = HTML_CSP;
   send(req, res, 200, headers, content);
 }
 

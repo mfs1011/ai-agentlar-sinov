@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bo'lib to'lash kalkulyatori</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>Bo'lib to'lash kalkulyatori</h1>
+    <p class="lead">Summani oylarga teng bo'lamiz. Foiz va ustama yo'q.</p>
+
+    <noscript>
+      <p class="alert">Kalkulyator ishlashi uchun brauzerda JavaScript yoqilgan bo'lishi kerak.</p>
+    </noscript>
+
+    <form id="calc-form" novalidate>
+      <div class="field">
+        <label for="amount">Summa (so'm)</label>
+        <input id="amount" name="amount" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="masalan, 1 000 000" aria-describedby="amount-hint amount-error">
+        <p id="amount-hint" class="hint">Butun son, 1 dan 1 000 000 000 000 000 so'mgacha</p>
+        <p id="amount-error" class="error" hidden></p>
+      </div>
+
+      <div class="field">
+        <label for="months">Oylar soni</label>
+        <input id="months" name="months" type="text" inputmode="numeric" autocomplete="off"
+               placeholder="masalan, 12" aria-describedby="months-hint months-error">
+        <p id="months-hint" class="hint">1 dan 120 gacha</p>
+        <p id="months-error" class="error" hidden></p>
+      </div>
+
+      <button type="submit" id="submit">Hisoblash</button>
+
+      <div id="form-error" class="alert" role="alert" hidden></div>
+    </form>
+
+    <section id="result" aria-labelledby="result-title" hidden>
+      <h2 id="result-title">To'lovlar jadvali</h2>
+      <p id="summary" class="summary"></p>
+      <div class="table-wrap">
+        <table>
+          <caption class="visually-hidden">Oylik to'lovlar</caption>
+          <thead>
+            <tr><th scope="col">Oy</th><th scope="col" class="num">To'lov</th></tr>
+          </thead>
+          <tbody id="payments"></tbody>
+          <tfoot>
+            <tr><th scope="row">Jami</th><td id="total" class="num"></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
