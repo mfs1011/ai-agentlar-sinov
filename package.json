@@ -1,0 +1,13 @@
+{
+  "name": "kalkulyator",
+  "version": "0.1.0",
+  "description": "Bo'lib to'lash kalkulyatori: HTTP API va veb-sahifa",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
