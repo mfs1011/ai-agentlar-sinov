@@ -2,8 +2,7 @@
 
 ## Buyruqlar
 - `npm test` — barcha testlar (`node --test`, `test/**/*.test.js`).
-- `PORT=3000 npm start` — serverni ishga tushirish (4-bosqichdan keyin).
-
+- `PORT=3000 npm start` — serverni ishga tushirish (`HOST` ixtiyoriy, standart `127.0.0.1`). PORT yo'q/noto'g'ri bo'lsa exit 1. SIGTERM/SIGINT da toza to'xtaydi.
 ## Qat'iy cheklovlar
 - Node.js ≥ 26, ES modullar. **Tashqi bog'liqliklar yo'q** — faqat `node:` modullari; `npm install <paket>` qilinmaydi.
 - Testlar faqat `node:test` + `node:assert/strict`.
