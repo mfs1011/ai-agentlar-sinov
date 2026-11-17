@@ -15,6 +15,18 @@ describe('parseNumberInput: formadagi matnni tozalash', () => {
     ['-5', -5], // server "1 dan ... gacha" deb javob beradi
     ['10.5', 10.5], // server "butun son" deb javob beradi
     ['10,5', 10.5],
+    // Ming ajratuvchisi sifatida nuqta/vergul (telefonda "1.000.000" yoziladi)
+    ['1.000.000', 1_000_000],
+    ['1,000,000', 1_000_000],
+    ['1.000', 1000],
+    ['12.345.678', 12_345_678],
+    [' 1.000.000 ', 1_000_000],
+    ['-1.000', -1000],
+    // Ajratuvchidan keyin aynan 3 raqam bo'lmasa — kasr (server "butun son" deydi)
+    ['1.5', 1.5],
+    ['1,5', 1.5],
+    ['1.50', 1.5],
+    ['1.0000', 1],
   ];
   for (const [input, expected] of cases) {
     it(`${JSON.stringify(input)} → ${expected}`, () => {
@@ -31,7 +43,12 @@ describe('parseNumberInput: formadagi matnni tozalash', () => {
     assert.equal(parseNumberInput('abc'), 'abc');
     assert.equal(parseNumberInput('1 000 so\'m'), '1000so\'m');
     assert.equal(parseNumberInput('1e3'), '1e3');
-    assert.equal(parseNumberInput('1.000.000'), '1.000.000');
+    // noto'g'ri guruhlash yoki aralash ajratuvchilar — taxmin qilinmaydi
+    assert.equal(parseNumberInput('1.000.00'), '1.000.00');
+    assert.equal(parseNumberInput('1.00.000'), '1.00.000');
+    assert.equal(parseNumberInput('1.000,000'), '1.000,000');
+    assert.equal(parseNumberInput('1.000.000,50'), '1.000.000,50');
+    assert.equal(parseNumberInput('.000'), '.000');
   });
 });
 
