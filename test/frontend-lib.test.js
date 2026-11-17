@@ -1,6 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNumberInput, formatSom, groupErrors } from '../public/lib.js';
+import {
+  parseNumberInput,
+  formatSom,
+  groupErrors,
+  buildPaymentsCsv,
+  csvFileName,
+  createResultState,
+  prepareCsvDownload,
+  CSV_ERROR,
+} from '../public/lib.js';
 
 describe('parseNumberInput: formadagi matnni tozalash', () => {
   const cases = [
@@ -124,4 +133,132 @@ describe('groupErrors: API xatosini maydonlarga ajratish', () => {
     assert.equal(grouped.months, null);
     assert.equal(grouped.general.length, 1);
   });
+});
+
+describe('buildPaymentsCsv: to\'lovlar jadvali CSV ko\'rinishida', () => {
+  const payments = [
+    { month: 1, amount: 334 },
+    { month: 2, amount: 333 },
+    { month: 3, amount: 333 },
+  ];
+
+  it('sarlavha, har oy bitta qator, oxirida Jami; qatorlar CRLF bilan', () => {
+    assert.equal(
+      buildPaymentsCsv(payments),
+      "Oy,To'lov\r\n1,334\r\n2,333\r\n3,333\r\nJami,1000\r\n",
+    );
+  });
+
+  it('katta summa formatlashsiz: guruhlash, bo\'shliq, "so\'m" yo\'q', () => {
+    const csv = buildPaymentsCsv([{ month: 1, amount: 1_000_000_000_000_000 }]);
+    assert.equal(csv, "Oy,To'lov\r\n1,1000000000000000\r\nJami,1000000000000000\r\n");
+    assert.doesNotMatch(csv.replaceAll('\r\n', ''), /\s|so'm/);
+  });
+
+  it('Jami — to\'lovlar yig\'indisi va oxirgi qator', () => {
+    const lines = buildPaymentsCsv(payments).trimEnd().split('\r\n');
+    assert.equal(lines.length, 1 + payments.length + 1);
+    assert.equal(lines.at(-1), 'Jami,1000');
+  });
+
+  it('noto\'g\'ri ma\'lumot → TypeError', () => {
+    assert.throws(() => buildPaymentsCsv([]), TypeError);
+    assert.throws(() => buildPaymentsCsv(null), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1, amount: 10.5 }]), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1, amount: '1000' }]), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1.5, amount: 1000 }]), TypeError);
+  });
+});
+
+describe('csvFileName: yuklab olinadigan fayl nomi', () => {
+  it('tolovlar-<summa>-<oylar>.csv, summa formatlashsiz', () => {
+    assert.equal(csvFileName(1000, 3), 'tolovlar-1000-3.csv');
+    assert.equal(csvFileName(1_000_000, 12), 'tolovlar-1000000-12.csv');
+  });
+
+  it('butun bo\'lmagan qiymat → TypeError', () => {
+    assert.throws(() => csvFileName(10.5, 3), TypeError);
+    assert.throws(() => csvFileName(1000, '3'), TypeError);
+  });
+});
+
+describe('createResultState: CSV uchun natija formaga mos bo\'lishi', () => {
+  const r1 = { amount: 1000, payments: [{ month: 1, amount: 1000 }] };
+  const r2 = { amount: 2000, payments: [{ month: 1, amount: 2000 }] };
+
+  it('boshida natija yo\'q', () => {
+    assert.equal(createResultState().current, null);
+  });
+
+  it('joriy so\'rov javobi qabul qilinadi', () => {
+    const state = createResultState();
+    const token = state.begin();
+    assert.equal(state.commit(token, r1), true);
+    assert.equal(state.current, r1);
+  });
+
+  it('yangi so\'rov boshlanishi eski natijani o\'chiradi', () => {
+    const state = createResultState();
+    state.commit(state.begin(), r1);
+    state.begin();
+    assert.equal(state.current, null);
+  });
+
+  it('maydon o\'zgarishi (invalidate) natijani o\'chiradi', () => {
+    const state = createResultState();
+    state.commit(state.begin(), r1);
+    state.invalidate();
+    assert.equal(state.current, null);
+  });
+
+  it('so\'rov davomida maydon o\'zgarsa, kech kelgan javob rad etiladi', () => {
+    const state = createResultState();
+    const token = state.begin();
+    assert.equal(state.isCurrent(token), true);
+    state.invalidate();
+    assert.equal(state.isCurrent(token), false);
+    assert.equal(state.commit(token, r1), false);
+    assert.equal(state.current, null);
+  });
+
+  it('eski so\'rov javobi yangisidan keyin kelsa, rad etiladi', () => {
+    const state = createResultState();
+    const oldToken = state.begin();
+    const newToken = state.begin();
+    assert.equal(state.commit(newToken, r2), true);
+    assert.equal(state.commit(oldToken, r1), false);
+    assert.equal(state.current, r2);
+  });
+});
+
+describe('prepareCsvDownload: xatolar xabarga aylanadi', () => {
+  it('to\'g\'ri natija → CSV va fayl nomi', () => {
+    const payments = [
+      { month: 1, amount: 334 },
+      { month: 2, amount: 333 },
+      { month: 3, amount: 333 },
+    ];
+    const out = prepareCsvDownload({ amount: 1000, payments });
+    assert.deepEqual(out, {
+      ok: true,
+      csv: buildPaymentsCsv(payments),
+      fileName: 'tolovlar-1000-3.csv',
+    });
+  });
+
+  const bad = [
+    ['null', null],
+    ['payments yo\'q', { amount: 1000 }],
+    ['bo\'sh payments', { amount: 1000, payments: [] }],
+    ['kasr to\'lov', { amount: 1000, payments: [{ month: 1, amount: 10.5 }] }],
+    ['amount satr', { amount: '1000', payments: [{ month: 1, amount: 1000 }] }],
+  ];
+  for (const [name, input] of bad) {
+    it(`${name} → xato otmaydi, o'zbekcha xabar qaytaradi`, () => {
+      const out = prepareCsvDownload(input);
+      assert.equal(out.ok, false);
+      assert.equal(out.message, CSV_ERROR);
+      assert.ok(out.cause instanceof TypeError);
+    });
+  }
 });
