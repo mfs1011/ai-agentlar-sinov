@@ -36,14 +36,52 @@ describe('parseNumberInput: formadagi matnni tozalash', () => {
 });
 
 describe('formatSom', () => {
-  it('uz-UZ formatida, "so\'m" bilan', () => {
-    assert.equal(formatSom(1000).replace(/\s/g, ' '), '1 000 so\'m');
-    assert.equal(formatSom(334).replace(/\s/g, ' '), '334 so\'m');
-    assert.equal(formatSom(10 ** 15).replace(/\s/g, ' '), '1 000 000 000 000 000 so\'m');
+  // Aniq satr: guruh ajratuvchi va "so'm" oldidagi bo'shliq — faqat NBSP (U+00A0)
+  const NB = ' ';
+  const cases = [
+    [0, `0${NB}so'm`],
+    [5, `5${NB}so'm`],
+    [334, `334${NB}so'm`],
+    [999, `999${NB}so'm`],
+    [1000, `1${NB}000${NB}so'm`],
+    [12_345, `12${NB}345${NB}so'm`],
+    [142_858, `142${NB}858${NB}so'm`],
+    [1_000_000, `1${NB}000${NB}000${NB}so'm`],
+    [8_333_333_333_334, `8${NB}333${NB}333${NB}333${NB}334${NB}so'm`],
+    [10 ** 15, `1${NB}000${NB}000${NB}000${NB}000${NB}000${NB}so'm`],
+    [Number.MAX_SAFE_INTEGER, `9${NB}007${NB}199${NB}254${NB}740${NB}991${NB}so'm`],
+  ];
+  for (const [n, expected] of cases) {
+    it(`${n} → ${JSON.stringify(expected)}`, () => {
+      assert.equal(formatSom(n), expected);
+    });
+  }
+
+  it('xavfsiz butun son bo\'lmasa → TypeError', () => {
+    for (const bad of [1.5, NaN, Infinity, 2 ** 53, '1000', null]) {
+      assert.throws(() => formatSom(bad), TypeError, String(bad));
+    }
   });
 
-  it('raqam va "so\'m" orasidagi bo\'shliq uzilmaydigan (qator bo\'linmasin)', () => {
-    assert.match(formatSom(5), /^5 so'm$/);
+  it('muhitga bog\'liq emas: Intl/toLocaleString Chrome kabi "1,000,000" qaytarsa ham', async (t) => {
+    // Chrome 157 da Intl.NumberFormat('uz-UZ') vergul bilan formatlaydi.
+    // Shuni taqlid qilamiz va lib.js ni yangidan yuklaymiz.
+    const chromeLike = new Intl.NumberFormat('en-US');
+    const OriginalNF = Intl.NumberFormat;
+    const originalToLocale = Number.prototype.toLocaleString;
+    Intl.NumberFormat = function NumberFormat() { return chromeLike; };
+    Number.prototype.toLocaleString = function toLocaleString() { return chromeLike.format(this); };
+    t.after(() => {
+      Intl.NumberFormat = OriginalNF;
+      Number.prototype.toLocaleString = originalToLocale;
+    });
+
+    // taqlid ishlayotganiga ishonch hosil qilish
+    assert.equal(new Intl.NumberFormat('uz-UZ').format(1_000_000), '1,000,000');
+
+    const { formatSom: fresh } = await import('../public/lib.js?chrome-like-intl');
+    assert.equal(fresh(1_000_000), `1${NB}000${NB}000${NB}so'm`);
+    assert.equal(fresh(142_858), `142${NB}858${NB}so'm`);
   });
 });
 

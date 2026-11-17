@@ -20,6 +20,7 @@
 - Statik fayllarni Node beradi (`public/`), faqat oq ro'yxat orqali (`STATIC_FILES`, `src/app.js`). `public/` ga yangi fayl qo'shilsa, oq ro'yxatga ham qo'shiladi — `static.test.js` buni tekshiradi.
 - HTML'ga qat'iy CSP (`default-src 'self'`): inline `<script>`, `<style>`, `style=""`, `on*=""` ishlatilmaydi.
 - `public/lib.js` DOM'siz bo'lishi kerak — u Node testlarida import qilinadi.
+- Sonlarni formatlashda `Intl.NumberFormat`/`toLocaleString` **ishlatilmaydi**: `uz-UZ` Chrome'da "1,000,000", Node'da "1 000 000" beradi. Guruhlar qo'lda, NBSP (U+00A0) bilan (`formatSom`, `public/lib.js`).
 - Server `PORT` muhit o'zgaruvchisidan, `HOST` standart `127.0.0.1` (Nginx orqasida).
 
 ## Ish tartibi

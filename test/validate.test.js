@@ -122,5 +122,8 @@ describe('validateInput: xabarlar', () => {
 
     const tooMany = validateInput({ amount: 1000, months: 121 });
     assert.match(tooMany.errors[0].message, /120/);
+
+    const tooBig = validateInput({ amount: 10 ** 15 + 1, months: 3 });
+    assert.equal(tooBig.errors[0].message, 'Summa 1 dan 1 000 000 000 000 000 so\'mgacha bo\'lishi kerak');
   });
 });

@@ -4,7 +4,8 @@ export const LIMITS = Object.freeze({
   MAX_AMOUNT: 10 ** 15,
 });
 
-const formatSom = (n) => n.toLocaleString('en-US').replaceAll(',', ' ');
+// Lokalga bog'liq emas (Intl ishlatilmaydi): 1000000000000000 → "1 000 000 000 000 000"
+const formatSom = (n) => String(n).replace(/\B(?=(\d{3})+$)/g, ' ');
 
 const FIELDS = {
   amount: {

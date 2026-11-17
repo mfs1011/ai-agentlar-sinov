@@ -1,6 +1,6 @@
 // DOM'ga bog'liq bo'lmagan yordamchi funksiyalar: brauzerda ham, Node testlarida ham ishlaydi.
 
-const numberFormat = new Intl.NumberFormat('uz-UZ', { maximumFractionDigits: 0 });
+const NBSP = ' ';
 
 const FALLBACK_ERROR = 'Noma\'lum xato yuz berdi. Birozdan keyin qaytadan urinib ko\'ring.';
 
@@ -21,11 +21,24 @@ export function parseNumberInput(raw) {
 }
 
 /**
- * @param {number} n
- * @returns {string} masalan "1 000 so'm" (bo'shliqlar uzilmaydigan)
+ * Summani "1 000 000 so'm" ko'rinishida formatlaydi: guruhlar va "so'm" oldidagi
+ * bo'shliq — NBSP (U+00A0).
+ *
+ * Intl.NumberFormat / toLocaleString ataylab ishlatilmaydi: 'uz-UZ' lokali
+ * brauzer va Node'da turlicha ma'lumotga ega (Chrome "1,000,000" beradi,
+ * Node "1 000 000"), natija hamma joyda bir xil bo'lishi kerak.
+ *
+ * @param {number} n  xavfsiz butun son
+ * @returns {string}
  */
 export function formatSom(n) {
-  return `${numberFormat.format(n)} so'm`;
+  if (!Number.isSafeInteger(n)) {
+    throw new TypeError(`formatSom: xavfsiz butun son kutilgan, berilgan: ${String(n)}`);
+  }
+  const sign = n < 0 ? '-' : '';
+  const digits = String(Math.abs(n));
+  const grouped = digits.replace(/\B(?=(\d{3})+$)/g, NBSP);
+  return `${sign}${grouped}${NBSP}so'm`;
 }
 
 /**
