@@ -132,7 +132,8 @@ async function onSubmit(event) {
   submitButton.disabled = true;
   form.setAttribute('aria-busy', 'true');
   try {
-    const res = await fetch('/api/installments', {
+    // Nisbiy yo'l: sahifa /kalkulyator/ ostida ham, ildizda ham ishlaydi
+    const res = await fetch('api/installments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
