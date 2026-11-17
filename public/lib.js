@@ -7,8 +7,13 @@ const FALLBACK_ERROR = 'Noma\'lum xato yuz berdi. Birozdan keyin qaytadan urinib
 /**
  * Formadagi matnni API uchun qiymatga aylantiradi.
  * Bo'shliqlar (oddiy, NBSP, tor NBSP, tab) olib tashlanadi: "1 000 000" → 1000000.
- * Son ko'rinishidagi matn songa aylanadi (kasr va manfiy ham — ularni server
- * tushunarli xabar bilan rad etadi); bo'sh → null; boshqa matn o'zicha qoladi.
+ * Nuqta yoki vergul ming ajratuvchisi bo'lishi mumkin: "1.000.000", "1,000,000",
+ * "1.000" → butun son. Shart: bitta xil ajratuvchi, birinchi guruh 1–3 raqam,
+ * qolganlari aynan 3 raqam. So'mda tiyin yo'q, shuning uchun "1.000" = 1000.
+ * Boshqa son ko'rinishidagi matn kasr deb olinadi ("1.5", "1,5" → 1.5) va
+ * manfiy ham songa aylanadi — ularni server tushunarli xabar bilan rad etadi.
+ * Bo'sh → null; boshqa matn (noto'g'ri guruhlash, aralash ajratuvchilar)
+ * o'zicha qoladi — taxmin qilinmaydi.
  *
  * @param {string} raw
  * @returns {number | string | null}
@@ -16,6 +21,7 @@ const FALLBACK_ERROR = 'Noma\'lum xato yuz berdi. Birozdan keyin qaytadan urinib
 export function parseNumberInput(raw) {
   const cleaned = String(raw).replace(/\s+/g, '');
   if (cleaned === '') return null;
+  if (/^-?\d{1,3}(?:([.,])\d{3})(?:\1\d{3})*$/.test(cleaned)) return Number(cleaned.replace(/[.,]/g, ''));
   if (/^-?\d+(?:[.,]\d+)?$/.test(cleaned)) return Number(cleaned.replace(',', '.'));
   return cleaned;
 }
