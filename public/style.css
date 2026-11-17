@@ -196,6 +196,10 @@ tfoot td {
   border-bottom: 0;
 }
 
+.actions {
+  margin: 1rem 0 0;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

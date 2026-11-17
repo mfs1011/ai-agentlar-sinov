@@ -65,3 +65,50 @@ export function groupErrors(error) {
   }
   return out;
 }
+
+const CSV_EOL = '\r\n'; // RFC 4180
+
+function assertSafeInteger(fn, name, value) {
+  if (!Number.isSafeInteger(value)) {
+    throw new TypeError(`${fn}: ${name} xavfsiz butun son bo'lishi kerak, berilgan: ${String(value)}`);
+  }
+}
+
+/**
+ * To'lovlar jadvalini CSV matniga aylantiradi: "Oy,To'lov" sarlavhasi, har oy
+ * uchun "<oy>,<to'lov>" qatori va oxirida "Jami,<yig'indi>". Summalar so'mda,
+ * formatlashsiz (guruhlash va "so'm"siz) — jadval dasturlari son deb o'qishi uchun.
+ * Qiymatlar faqat butun son va "Jami", shuning uchun qo'shtirnoq/escape kerak emas.
+ *
+ * @param {{month: number, amount: number}[]} payments
+ * @returns {string}
+ */
+export function buildPaymentsCsv(payments) {
+  if (!Array.isArray(payments) || payments.length === 0) {
+    throw new TypeError('buildPaymentsCsv: to\'lovlar ro\'yxati bo\'sh bo\'lmasligi kerak');
+  }
+  const lines = ["Oy,To'lov"];
+  let total = 0;
+  for (const { month, amount } of payments) {
+    assertSafeInteger('buildPaymentsCsv', 'month', month);
+    assertSafeInteger('buildPaymentsCsv', 'amount', amount);
+    total += amount;
+    lines.push(`${month},${amount}`);
+  }
+  assertSafeInteger('buildPaymentsCsv', 'Jami', total);
+  lines.push(`Jami,${total}`);
+  return lines.join(CSV_EOL) + CSV_EOL;
+}
+
+/**
+ * Yuklab olinadigan CSV fayl nomi: tolovlar-<summa>-<oylar>.csv.
+ *
+ * @param {number} amount
+ * @param {number} months
+ * @returns {string}
+ */
+export function csvFileName(amount, months) {
+  assertSafeInteger('csvFileName', 'amount', amount);
+  assertSafeInteger('csvFileName', 'months', months);
+  return `tolovlar-${amount}-${months}.csv`;
+}

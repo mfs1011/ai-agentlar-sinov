@@ -1,4 +1,4 @@
-import { parseNumberInput, formatSom, groupErrors } from './lib.js';
+import { parseNumberInput, formatSom, groupErrors, buildPaymentsCsv, csvFileName } from './lib.js';
 
 const FIELDS = ['amount', 'months'];
 const NETWORK_ERROR = 'Server bilan bog\'lanib bo\'lmadi. Internet aloqasini tekshirib, qaytadan urinib ko\'ring.';
@@ -10,6 +10,10 @@ const result = document.getElementById('result');
 const summary = document.getElementById('summary');
 const paymentsBody = document.getElementById('payments');
 const total = document.getElementById('total');
+const downloadButton = document.getElementById('download-csv');
+
+// Oxirgi muvaffaqiyatli natija — CSV shundan yasaladi
+let lastResult = null;
 
 function setFieldError(field, message) {
   const input = form.elements[field];
@@ -64,7 +68,28 @@ function renderResult({ amount, payments }) {
   summary.textContent = describe(payments);
   if (sum !== amount) console.error('Jami summaga teng emas', { amount, sum });
 
+  lastResult = { amount, payments };
   result.hidden = false;
+}
+
+function hideResult() {
+  result.hidden = true;
+  lastResult = null;
+}
+
+function downloadCsv() {
+  if (!lastResult) return;
+  const { amount, payments } = lastResult;
+  const blob = new Blob([buildPaymentsCsv(payments)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = csvFileName(amount, payments.length);
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // Brauzer yuklashni boshlab olishi uchun URL'ni darhol emas, keyinroq bo'shatamiz
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 async function onSubmit(event) {
@@ -89,11 +114,11 @@ async function onSubmit(event) {
     if (res.ok && data) {
       renderResult(data);
     } else {
-      result.hidden = true;
+      hideResult();
       showErrors(groupErrors(data?.error));
     }
   } catch {
-    result.hidden = true;
+    hideResult();
     setFormError([NETWORK_ERROR]);
   } finally {
     submitButton.disabled = false;
@@ -102,6 +127,7 @@ async function onSubmit(event) {
 }
 
 form.addEventListener('submit', onSubmit);
+downloadButton.addEventListener('click', downloadCsv);
 
 // Foydalanuvchi maydonni tuzata boshlasa, o'sha maydondagi xato yo'qoladi
 for (const field of FIELDS) {

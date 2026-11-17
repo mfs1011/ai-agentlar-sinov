@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseNumberInput, formatSom, groupErrors } from '../public/lib.js';
+import { parseNumberInput, formatSom, groupErrors, buildPaymentsCsv, csvFileName } from '../public/lib.js';
 
 describe('parseNumberInput: formadagi matnni tozalash', () => {
   const cases = [
@@ -123,5 +123,52 @@ describe('groupErrors: API xatosini maydonlarga ajratish', () => {
     assert.equal(grouped.amount, null);
     assert.equal(grouped.months, null);
     assert.equal(grouped.general.length, 1);
+  });
+});
+
+describe('buildPaymentsCsv: to\'lovlar jadvali CSV ko\'rinishida', () => {
+  const payments = [
+    { month: 1, amount: 334 },
+    { month: 2, amount: 333 },
+    { month: 3, amount: 333 },
+  ];
+
+  it('sarlavha, har oy bitta qator, oxirida Jami; qatorlar CRLF bilan', () => {
+    assert.equal(
+      buildPaymentsCsv(payments),
+      "Oy,To'lov\r\n1,334\r\n2,333\r\n3,333\r\nJami,1000\r\n",
+    );
+  });
+
+  it('katta summa formatlashsiz: guruhlash, bo\'shliq, "so\'m" yo\'q', () => {
+    const csv = buildPaymentsCsv([{ month: 1, amount: 1_000_000_000_000_000 }]);
+    assert.equal(csv, "Oy,To'lov\r\n1,1000000000000000\r\nJami,1000000000000000\r\n");
+    assert.doesNotMatch(csv.replaceAll('\r\n', ''), /\s|so'm/);
+  });
+
+  it('Jami — to\'lovlar yig\'indisi va oxirgi qator', () => {
+    const lines = buildPaymentsCsv(payments).trimEnd().split('\r\n');
+    assert.equal(lines.length, 1 + payments.length + 1);
+    assert.equal(lines.at(-1), 'Jami,1000');
+  });
+
+  it('noto\'g\'ri ma\'lumot → TypeError', () => {
+    assert.throws(() => buildPaymentsCsv([]), TypeError);
+    assert.throws(() => buildPaymentsCsv(null), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1, amount: 10.5 }]), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1, amount: '1000' }]), TypeError);
+    assert.throws(() => buildPaymentsCsv([{ month: 1.5, amount: 1000 }]), TypeError);
+  });
+});
+
+describe('csvFileName: yuklab olinadigan fayl nomi', () => {
+  it('tolovlar-<summa>-<oylar>.csv, summa formatlashsiz', () => {
+    assert.equal(csvFileName(1000, 3), 'tolovlar-1000-3.csv');
+    assert.equal(csvFileName(1_000_000, 12), 'tolovlar-1000000-12.csv');
+  });
+
+  it('butun bo\'lmagan qiymat → TypeError', () => {
+    assert.throws(() => csvFileName(10.5, 3), TypeError);
+    assert.throws(() => csvFileName(1000, '3'), TypeError);
   });
 });
